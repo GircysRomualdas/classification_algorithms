@@ -1,137 +1,67 @@
-def calculate_combined_probabilities(data):
-    probabilities = {}
-    
-    for feature_values in data.values():
-        for values in feature_values.values():
-            for outcome in values.keys():
-                probabilities[outcome] = 0
-    
-    for feature_values in data.values():
-        for values in feature_values.values():
-            for outcome, stats in values.items():
-                if stats['probability'] != 0:
-                    if probabilities[outcome] == 0:
-                        probabilities[outcome] = stats['probability']
-                    else:
-                        probabilities[outcome] *= stats['probability']
+from sklearn import datasets 
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+import numpy as np
+import timeit
+from knn import KNN
+from decisionTree import DecisionTree
 
+def accuracy(y_test, y_pred):
+    return np.sum(y_test == y_pred) / len(y_test)
 
-    for key, value in probabilities.items():
-        probabilities[key] = "{:.10f}".format(value)
+# load test dataset
+iris = datasets.load_iris()
+X, y = iris.data, iris.target
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1234)
 
+cmap = ListedColormap(['#FF0000', '#008000', '#0000FF'])
+plt.figure(figsize=(12, 6))
 
-    return probabilities
+# Plot raw data
+plt.subplot(1, 3, 1)
+plt.scatter(X[:, 2], X[:, 3], c=y, cmap=cmap, edgecolors='k', s=20)
+plt.title("Raw Data")
+plt.xlabel('Feature 2')
+plt.ylabel('Feature 3')
 
-data = {
- "outlook": {
-  "sunny": {
-   "yes": {
-    "count": 2,
-    "probability": 0.2222222222222222
-   },
-   "no": {
-    "count": 3,
-    "probability": 0.6
-   }
-  },
-  "overcast": {
-   "yes": {
-    "count": 4,
-    "probability": 0.4444444444444444
-   },
-   "no": {
-    "count": 0,
-    "probability": 0.0
-   }
-  },
-  "rainy": {
-   "yes": {
-    "count": 3,
-    "probability": 0.3333333333333333
-   },
-   "no": {
-    "count": 2,
-    "probability": 0.4
-   }
-  }
- },
- "temperature": {
-  "cool": {
-   "yes": {
-    "count": 3,
-    "probability": 0.3333333333333333
-   },
-   "no": {
-    "count": 1,
-    "probability": 0.2
-   }
-  },
-  "hot": {
-   "yes": {
-    "count": 2,
-    "probability": 0.2222222222222222
-   },
-   "no": {
-    "count": 2,
-    "probability": 0.4
-   }
-  },
-  "mid": {
-   "yes": {
-    "count": 4,
-    "probability": 0.4444444444444444
-   },
-   "no": {
-    "count": 2,
-    "probability": 0.4
-   }
-  }
- },
- "humidity": {
-  "normal": {
-   "yes": {
-    "count": 6,
-    "probability": 0.6666666666666666
-   },
-   "no": {
-    "count": 1,
-    "probability": 0.2
-   }
-  },
-  "high": {
-   "yes": {
-    "count": 3,
-    "probability": 0.3333333333333333
-   },
-   "no": {
-    "count": 4,
-    "probability": 0.8
-   }
-  }
- },
- "windy": {
-  "false": {
-   "yes": {
-    "count": 6,
-    "probability": 0.6666666666666666
-   },
-   "no": {
-    "count": 2,
-    "probability": 0.4
-   }
-  },
-  "true": {
-   "yes": {
-    "count": 3,
-    "probability": 0.3333333333333333
-   },
-   "no": {
-    "count": 3,
-    "probability": 0.6
-   }
-  }
- }
-}
+# KNN predictions
+start_time = timeit.default_timer()
+clf = KNN(k=15)
+clf.fit(X_train, y_train)
+predictions_knn = clf.predict(X_test)
+end_time = timeit.default_timer()
+acc_knn = accuracy(y_test, predictions_knn)
 
-combined_probabilities = calculate_combined_probabilities(data)
-print(combined_probabilities)
+plt.subplot(1, 3, 2)
+plt.scatter(X_test[:, 2], X_test[:, 3], c=predictions_knn, cmap=cmap, edgecolors='k', s=20)
+plt.title("K-Nearest Neighbor Predictions")
+plt.xlabel('Feature 2')
+plt.ylabel('Feature 3')
+plt.text(7, 2, f'Accuracy: {acc_knn:.2f}', fontsize=12, bbox=dict(facecolor='white', alpha=0.5))
+
+# DecisionTree predictions
+start_time = timeit.default_timer()
+clf = DecisionTree()
+clf.fit(X_train, y_train)
+predictions_dt = clf.predict(X_test)
+end_time = timeit.default_timer()
+acc_dt = accuracy(y_test, predictions_dt)
+
+plt.subplot(1, 3, 3)
+plt.scatter(X_test[:, 2], X_test[:, 3], c=predictions_dt, cmap=cmap, edgecolors='k', s=20)
+plt.title("DecisionTree Predictions")
+plt.xlabel('Feature 2')
+plt.ylabel('Feature 3')
+plt.text(7, 2, f'Accuracy: {acc_dt:.2f}', fontsize=12, bbox=dict(facecolor='white', alpha=0.5))
+
+plt.tight_layout()
+plt.show()
+
+print("\nK-Nearest Neighbor")
+print(f"accuracy: {acc_knn}")
+print(f"time: {"{:.10f}".format(end_time - start_time)}")
+
+print("\nDecisionTree")
+print(f"accuracy: {acc_dt}")
+print(f"time: {"{:.10f}".format(end_time - start_time)}")
